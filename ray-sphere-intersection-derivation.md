@@ -219,11 +219,6 @@ bool checkSphereIntersection(in source sampleSource, in sphere sampleSphere, out
     
     return false;
 }
-
-void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
-{
-
-}
 `
 
 ====================
