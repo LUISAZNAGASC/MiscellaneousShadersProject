@@ -1,80 +1,189 @@
-1. DEFINICIÓN DEL RAYO:
+==================================================
+==================================================
 
-WP.xyz=RO.xyz+RD.xyz*DT;
+STEP 00 - VARIABLE DEFINITIONS
 
-WP.x=RO.x+RD.x*DT;
-WP.y=RO.y+RD.y*DT;
-WP.z=RO.z+RD.z*DT;
+STEP 01
 
-2. DEFINICIÓN DE LA ESFERA:
+WP : WORLD POSITION
+RO : RAY ORIGIN
+RD : RAY DIRECTION
+ID : INTERSECTION DISTANCE
 
-(WP.x-SP.x)^2.0+(WP.y-SP.y)^2.0+(WP.z-SP.z)^2.0=(SR)^2.0;
+STEP 02
 
-3. SUSTITUCIÓN DE LA ESFERA:
+WP : WORLD POSITION
+SP : SPHERE POSITION
+SR : SPHERE RADIUS
 
-WP.x=RO.x+RD.x*DT;
-WP.y=RO.y+RD.y*DT;
-WP.z=RO.z+RD.z*DT;
+STEP 03
 
-(RO.x+RD.x*DT-SP.x)^2.0+(RO.y+RD.y*DT-SP.y)^2.0+(RO.z+RD.z*DT-SP.z)^2.0=(SR)^2.0;
+WP : WORLD POSITION
+RO : RAY ORIGIN
+RD : RAY DIRECTION
+ID : INTERSECTION DISTANCE
+SP : SPHERE POSITION
+SR : SPHERE RADIUS
 
-4. DEFINICIÓN DEL VECTOR RELATIVO:
+STEP 04
 
-RP.xyz=RO.xyz-SP.xyz;
-RP.x=RO.x-SP.x;
-RP.y=RO.y-SP.y;
-RP.z=RO.z-SP.z;
+RP : RELATIVE POSITION
+RO : RAY ORIGIN
+SP : SPHERE POSITION
+RD : RAY DIRECTION
+ID : INTERSECTION DISTANCE
+SR : SPHERE RADIUS
 
-(RP.x+RD.x*DT)^2.0+(RP.y+RD.y*DT)^2.0+(RP.z+RD.z*DT)^2.0=(SR)^2.0;
+STEP 05
 
-5. EXPANSIÓN DE LA FORMA CUADRÁTICA:
+RP : RELATIVE POSITION
+RD : RAY DIRECTION
+ID : INTERSECTION DISTANCE
+SR : SPHERE RADIUS
 
-(RP.x)^2.0+(RD.x*DT)^2.0+2.0*RP.x*RD.x*DT+(RP.y)^2.0+(RD.y*DT)^2.0+2.0*RP.y*RD.y*DT+(RP.z)^2.0+(RD.z*DT)^2.0+2.0*RP.z*RD.z*DT=(SR)^2.0;
+STEP 06
 
-((RD.x)^2.0+(RD.y)^2.0+(RD.z)^2.0)*(DT)^2.0+2.0*(RP.x*RD.x+RP.y*RD.y+RP.z*RD.z)*DT+(RP.x)^2.0+(RP.y)^2.0+(RP.z)^2.0-(SR)^2.0=0.0;
+QC : QUADRATIC COEFFICIENT
+LC : LINEAR COEFFICIENT
+CC : CONSTANT COEFFICIENT
+RP : RELATIVE POSITION
+RD : RAY DIRECTION
+SR : SPHERE RADIUS
 
-(RD.xyz·RD.xyz)*(DT)^2.0+2.0*(RP.xyz·RD.xyz)*DT+(RP.xyz·RP.xyz)-(SR)^2.0=0.0;
+STEP 07
 
-6. DEFINICIÓN DE LOS COEFICIENTES:
+QC : QUADRATIC COEFFICIENT
+LC : LINEAR COEFFICIENT
+CC : CONSTANT COEFFICIENT
+ID : INTERSECTION DISTANCE
 
-QC=(RD.xyz·RD.xyz);
+STEP 08
 
-LC=(RP.xyz·RD.xyz);
+ID : INTERSECTION DISTANCE
+NC : NUMERIC CONSTANT
+LC : LINEAR COEFFICIENT
+QC : QUADRATIC COEFFICIENT
 
-CC=(RP.xyz·RP.xyz)-(SR)^2.0;
+STEP 09
 
-7. DEFINICIÓN DE LA EQUACIÓN CUADRÁTICA:
+ID : INTERSECTION DISTANCE
+NC : NUMERIC CONSTANT
+CC : CONSTANT COEFFICIENT
+QC : QUADRATIC COEFFICIENT
+LC : LINEAR COEFFICIENT
 
-QC*(DT)^2.0+2.0*LC*DT+CC=0.0;
+==================================================
+==================================================
 
-(QC*(DT)^2.0+2.0*LC*DT+CC)/QC=0.0;
+STEP 01 - RAY DEFINITION
 
-(DT)^2.0+(2.0*LC/QC)*DT+CC/QC=0.0;
+WP.xyz = RO.xyz + RD.xyz * ID;
 
-8. FINALIZACIÓN CUADRADO PERFECTO:
+WP.x = RO.x + RD.x * ID;
+WP.y = RO.y + RD.y * ID;
+WP.z = RO.z + RD.z * ID;
 
-(DT+KN)^2.0=(DT)^2.0+2.0*KN*DT+(KN)^2.0;
+==================================================
+==================================================
 
-2.0*KN*DT=(2.0*LC/QC)*DT;
+STEP 02 - SPHERE DEFINITION
 
-KN=LC/QC;
+(WP.x - SP.x)^2.0 + (WP.y - SP.y)^2.0 + (WP.z - SP.z)^2.0 = (SR)^2.0;
 
-(DT)^2.0+2.0*KN*DT+CC/QC=0.0;
+==================================================
+==================================================
 
-(DT)^2.0+2.0*KN*DT=-CC/QC;
+STEP 03 - SPHERE SUBSTITUTION
 
-(DT+KN)^2.0=-CC/QC+(KN)^2.0;
+WP.x = RO.x + RD.x * ID;
+WP.y = RO.y + RD.y * ID;
+WP.z = RO.z + RD.z * ID;
 
-9. SOLUCIÓN FINAL:
+(RO.x + RD.x * ID - SP.x)^2.0 + (RO.y + RD.y * ID - SP.y)^2.0 + (RO.z + RD.z * ID - SP.z)^2.0 = (SR)^2.0;
 
-DT+KN=+(-CC/QC+(KN)^2.0)^0.5;
+==================================================
+==================================================
 
-DT+KN=-(-CC/QC+(KN)^2.0)^0.5;
+STEP 04 - RELATIVE VECTOR DEFINITION
 
-DT=-KN+(-CC/QC+(KN)^2.0)^0.5;
+RP.xyz = RO.xyz - SP.xyz;
 
-DT=-KN-(-CC/QC+(KN)^2.0)^0.5;
+RP.x = RO.x - SP.x;
+RP.y = RO.y - SP.y;
+RP.z = RO.z - SP.z;
 
-DT=-LC/QC+((LC/QC)^2.0-CC/QC)^0.5;
+(RP.x + RD.x * ID)^2.0 + (RP.y + RD.y * ID)^2.0 + (RP.z + RD.z * ID)^2.0 = (SR)^2.0;
 
-DT=-LC/QC-((LC/QC)^2.0-CC/QC)^0.5;
+==================================================
+==================================================
+
+STEP 05 - EXPANSION OF THE QUADRATIC FORM
+
+(RP.x)^2.0 + (RD.x * ID)^2.0 + 2.0 * RP.x * RD.x * ID + (RP.y)^2.0 + (RD.y * ID)^2.0 + 2.0 * RP.y * RD.y * ID + (RP.z)^2.0 + (RD.z * ID)^2.0 + 2.0 * RP.z * RD.z * ID = (SR)^2.0;
+
+((RD.x)^2.0 + (RD.y)^2.0 + (RD.z)^2.0) * (ID)^2.0 + 2.0 * (RP.x * RD.x + RP.y * RD.y + RP.z * RD.z) * ID + (RP.x)^2.0 + (RP.y)^2.0 + (RP.z)^2.0 - (SR)^2.0 = 0.0;
+
+(RD.xyz · RD.xyz) * (ID)^2.0 + 2.0 * (RP.xyz · RD.xyz) * ID + (RP.xyz · RP.xyz) - (SR)^2.0 = 0.0;
+
+==================================================
+==================================================
+
+STEP 06 - COEFFICIENT DEFINITIONS
+
+QC = (RD.xyz · RD.xyz);
+
+LC = 2.0 * (RP.xyz · RD.xyz);
+
+CC = (RP.xyz · RP.xyz) - (SR)^2.0;
+
+==================================================
+==================================================
+
+STEP 07 - QUADRATIC EQUATION DEFINITION
+
+QC * (ID)^2.0 + LC * ID + CC = 0.0;
+
+(QC * (ID)^2.0 + LC * ID + CC) / QC = 0.0;
+
+(ID)^2.0 + (LC / QC) * ID + CC / QC = 0.0;
+
+==================================================
+==================================================
+
+STEP 08 - COMPLETING THE SQUARE
+
+(ID + NC)^2.0 = (ID)^2.0 + 2.0 * NC * ID + (NC)^2.0;
+
+2.0 * NC * ID = (LC / QC) * ID;
+
+2.0 * NC = LC / QC;
+
+NC = LC / (2.0 * QC);
+
+(ID)^2.0 + 2.0 * NC * ID + CC / QC = 0.0;
+
+(ID)^2.0 + 2.0 * NC * ID = -CC / QC;
+
+(ID + NC)^2.0 = -CC / QC + (NC)^2.0;
+
+==================================================
+==================================================
+
+STEP 09 - FINAL SOLUTION
+
+ID + NC = +(-CC / QC + (NC)^2.0)^0.5;
+
+ID + NC = -(-CC / QC + (NC)^2.0)^0.5;
+
+ID = -NC + (-CC / QC + (NC)^2.0)^0.5;
+
+ID = -NC - (-CC / QC + (NC)^2.0)^0.5;
+
+ID = -(LC / (2.0 * QC)) + ((LC / (2.0 * QC))^2.0 - CC / QC)^0.5;
+
+ID = -(LC / (2.0 * QC)) - ((LC / (2.0 * QC))^2.0 - CC / QC)^0.5;
+
+ID = (-LC ± (LC^2.0 - 4.0 * QC * CC)^0.5) / (2.0 * QC);
+
+==================================================
+==================================================
