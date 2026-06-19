@@ -189,8 +189,7 @@ ID = (-LC ± (LC^2.0 - 4.0 * QC * CC)^0.5) / (2.0 * QC);
 ====================
 
 # SOURCE CODE
-
-`
+```
 struct source { vec3 position; vec3 direction; };
 
 struct sphere { vec3 position; float radius; };
@@ -219,7 +218,6 @@ bool checkSphereIntersection(in source sampleSource, in sphere sampleSphere, out
     
     return false;
 }
-`
-
+```
 ====================
 ====================
