@@ -1,0 +1,320 @@
+==================================================
+==================================================
+
+TITLE:
+
+Analytic_Checkerboard_01
+
+TAGS:
+
+procedural, checkerboard, antialiasing, utility
+
+DESCRIPTION:
+
+Screen-space procedural checkerboard rendered with analytic anti-aliasing using fwidth(). Includes configurable tile colors, optional grid lines, and proper sRGB output.
+
+CODE:
+
+void applyCheckerboardBackground(inout vec3 fragmentColor, const in vec2 pixelCoordinates, const in vec3 squareColor01, const in vec3 squareColor02, const in float squareDimension, const in vec3 segmentColor, const in float segmentDimension)
+{
+    if (squareDimension <= 0.0) return;
+    
+    vec2 squarePosition = pixelCoordinates / squareDimension;
+    
+    vec2 squareFootprint = max(vec2(1e-7), fwidth(squarePosition));
+    
+    vec2 negativeCorner = abs(fract(0.5 * (squarePosition - 0.5 * squareFootprint)) - 0.5);
+    vec2 positiveCorner = abs(fract(0.5 * (squarePosition + 0.5 * squareFootprint)) - 0.5);
+    
+    float squareSelection = 2.0 * (negativeCorner.x - positiveCorner.x) * (negativeCorner.y - positiveCorner.y);
+    squareSelection = 0.5 - squareSelection / (squareFootprint.x * squareFootprint.y);
+    
+    fragmentColor = mix(squareColor01, squareColor02, squareSelection);
+    
+    if (segmentDimension <= 0.0) return;
+    
+    vec2 segmentPosition = mod(pixelCoordinates, squareDimension);
+    segmentPosition = min(segmentPosition, squareDimension - segmentPosition);
+    
+    float segmentDistance = min(segmentPosition.x, segmentPosition.y);
+    
+    vec2 segmentThreshold = segmentDimension + vec2(-0.5, 0.5) * fwidth(segmentDistance);
+    
+    float segmentSelection = smoothstep(segmentThreshold.x, segmentThreshold.y, segmentDistance);
+    
+    fragmentColor = mix(segmentColor, fragmentColor, segmentSelection);
+}
+
+void applyGammaCorrection(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+    
+    vec3 lowerSelection = 12.92 * fragmentColor;
+    
+    vec3 upperSelection = 1.055 * pow(fragmentColor, vec3(0.4166667)) - 0.055;
+    
+    vec3 pickerSelection = step(0.0031308, fragmentColor);
+    
+    fragmentColor = mix(lowerSelection, upperSelection, pickerSelection);
+}
+
+void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
+{
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+    
+    vec2 pixelCoordinates = (2.0 * fragmentPosition - iResolution.xy) / min(iResolution.x, iResolution.y);
+    
+    applyCheckerboardBackground(fragmentColor.rgb, pixelCoordinates, vec3(0.15), vec3(0.05), 0.35, vec3(0.01), 0.01);
+    
+    applyGammaCorrection(fragmentColor.rgb);
+}
+
+
+==================================================
+==================================================
+
+TITLE:
+
+Analytic_Curves_01
+
+TAGS:
+
+procedural, curves, antialiasing, trigonometry, animation
+
+DESCRIPTION:
+
+Procedural animated curves rendered with analytic anti-aliasing using fwidth() and derivative-based distance estimation. Includes multiple trigonometric curves over a configurable checkerboard background.
+
+CODE:
+
+float getCurveCoverage(const in vec2 pixelCoordinates, const in float curveEvaluation, const in float curveDerivative, const in float lineThickness)
+{
+    float curveDistance = abs(pixelCoordinates.y - curveEvaluation);
+    curveDistance = curveDistance / sqrt(1.0 + curveDerivative * curveDerivative);
+    
+    vec2 curveFootprint = lineThickness + vec2(-0.5, 0.5) * fwidth(curveDistance);
+    
+    float curveCoverage = 1.0 - smoothstep(curveFootprint.x, curveFootprint.y, curveDistance);
+    
+    return curveCoverage;
+}
+
+void applyCheckerboardBackground(inout vec3 fragmentColor, const in vec2 pixelCoordinates, const in vec3 squareColor01, const in vec3 squareColor02, const in float squareDimension, const in vec3 segmentColor, const in float segmentDimension)
+{
+    if (squareDimension <= 0.0) return;
+    
+    vec2 squarePosition = pixelCoordinates / squareDimension;
+    
+    vec2 squareFootprint = max(vec2(1e-7), fwidth(squarePosition));
+    
+    vec2 negativeCorner = abs(fract(0.5 * (squarePosition - 0.5 * squareFootprint)) - 0.5);
+    vec2 positiveCorner = abs(fract(0.5 * (squarePosition + 0.5 * squareFootprint)) - 0.5);
+    
+    float squareSelection = 2.0 * (negativeCorner.x - positiveCorner.x) * (negativeCorner.y - positiveCorner.y);
+    squareSelection = 0.5 - squareSelection / (squareFootprint.x * squareFootprint.y);
+    
+    fragmentColor = mix(squareColor01, squareColor02, squareSelection);
+    
+    if (segmentDimension <= 0.0) return;
+    
+    vec2 segmentPosition = mod(pixelCoordinates, squareDimension);
+    segmentPosition = min(segmentPosition, squareDimension - segmentPosition);
+    
+    float segmentDistance = min(segmentPosition.x, segmentPosition.y);
+    
+    vec2 segmentThreshold = segmentDimension + vec2(-0.5, 0.5) * fwidth(segmentDistance);
+    
+    float segmentSelection = smoothstep(segmentThreshold.x, segmentThreshold.y, segmentDistance);
+    
+    fragmentColor = mix(segmentColor, fragmentColor, segmentSelection);
+}
+
+void applyGammaCorrection(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+    
+    vec3 lowerSelection = 12.92 * fragmentColor;
+    
+    vec3 upperSelection = 1.055 * pow(fragmentColor, vec3(0.4166667)) - 0.055;
+    
+    vec3 pickerSelection = step(0.0031308, fragmentColor);
+    
+    fragmentColor = mix(lowerSelection, upperSelection, pickerSelection);
+}
+
+void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
+{
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+    
+    vec2 pixelCoordinates = (2.0 * fragmentPosition - iResolution.xy) / min(iResolution.x, iResolution.y);
+    
+    const float lineThickness = 0.05;
+    
+    float curveEvaluation01 = -0.75 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative01 = 0.75 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage01 = getCurveCoverage(pixelCoordinates, curveEvaluation01, curveDerivative01, lineThickness);
+    vec3 curveColor01 = vec3(1.0, 0.0, 0.0);
+    
+    float curveEvaluation02 = -0.5 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative02 = 0.5 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage02 = getCurveCoverage(pixelCoordinates, curveEvaluation02, curveDerivative02, lineThickness);
+    vec3 curveColor02 = vec3(1.0, 0.0, 1.0);
+    
+    float curveEvaluation03 = -0.25 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative03 = 0.25 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage03 = getCurveCoverage(pixelCoordinates, curveEvaluation03, curveDerivative03, lineThickness);
+    vec3 curveColor03 = vec3(0.0, 0.0, 1.0);
+    
+    float curveEvaluation04 = 0.25 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative04 = -0.25 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage04 = getCurveCoverage(pixelCoordinates, curveEvaluation04, curveDerivative04, lineThickness);
+    vec3 curveColor04 = vec3(0.0, 1.0, 1.0);
+    
+    float curveEvaluation05 = 0.5 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative05 = -0.5 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage05 = getCurveCoverage(pixelCoordinates, curveEvaluation05, curveDerivative05, lineThickness);
+    vec3 curveColor05 = vec3(0.0, 1.0, 0.0);
+    
+    float curveEvaluation06 = 0.75 * cos(3.1415926 * pixelCoordinates.x + iTime);
+    float curveDerivative06 = -0.75 * 3.1415926 * sin(3.1415926 * pixelCoordinates.x + iTime);
+    float curveCoverage06 = getCurveCoverage(pixelCoordinates, curveEvaluation06, curveDerivative06, lineThickness);
+    vec3 curveColor06 = vec3(1.0, 1.0, 0.0);
+    
+    applyCheckerboardBackground(fragmentColor.rgb, pixelCoordinates, vec3(0.15), vec3(0.05), 0.5, vec3(0.01), 0.0075);
+    
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor01, curveCoverage01);
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor02, curveCoverage02);
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor03, curveCoverage03);
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor04, curveCoverage04);
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor05, curveCoverage05);
+    fragmentColor.rgb = mix(fragmentColor.rgb, curveColor06, curveCoverage06);
+    
+    applyGammaCorrection(fragmentColor.rgb);
+}
+
+==================================================
+==================================================
+
+TITLE:
+
+Analytic_Spheres_01
+
+TAGS:
+
+procedural, spheres, antialiasing, coverage
+
+DESCRIPTION:
+
+Procedural spheres rendered with analytic anti-aliasing using fwidth() and ray-based distance evaluation. Includes smooth coverage accumulation and a configurable orbital camera.
+
+CODE:
+
+struct source { vec3 position; vec3 direction; };
+
+struct sphere { vec3 position; float radius; };
+
+float getSphereCoverage(const in source sampleSource, const in sphere sampleSphere, const in vec2 projectionRange)
+{
+    vec3 relativePosition = sampleSphere.position - sampleSource.position;
+    
+    float projectionDistance = dot(relativePosition, sampleSource.direction);
+    
+    if (projectionDistance < projectionRange.x || projectionDistance > projectionRange.y) return 0.0;
+    
+    float projectionWeight = 1.0 - (projectionDistance - projectionRange.x) / (projectionRange.y - projectionRange.x);
+    
+    float orthogonalDistance = length(relativePosition - projectionDistance * sampleSource.direction);
+    
+    vec2 smoothnessInterval = sampleSphere.radius + vec2(-0.5, 0.5) * fwidth(orthogonalDistance);
+    
+    float sphereCoverage = 1.0 - smoothstep(smoothnessInterval.x, smoothnessInterval.y, orthogonalDistance);
+    sphereCoverage = sphereCoverage * clamp(projectionWeight, 0.0, 1.0);
+    
+    return sphereCoverage;
+}
+
+void setSceneCoverage(const in source sampleSource, const in sphere sampleSphere, inout float sampleCoverage)
+{
+    const vec2 projectionRange = vec2(0.001, 1500.0);
+    
+    float sphereCoverage = getSphereCoverage(sampleSource, sampleSphere, projectionRange);
+    
+    sampleCoverage = 1.0 - (1.0 - sampleCoverage) * (1.0 - sphereCoverage);
+}
+
+void setSceneCoverage(const in source sampleSource, const in ivec3 matrixExtension, const in vec3 matrixSeparation, const in float sphereRadius, inout float sampleCoverage)
+{
+    for (int matrixXIndex = -matrixExtension.x; matrixXIndex <= matrixExtension.x; matrixXIndex++)
+    for (int matrixYIndex = -matrixExtension.y; matrixYIndex <= matrixExtension.y; matrixYIndex++)
+    for (int matrixZIndex = -matrixExtension.z; matrixZIndex <= matrixExtension.z; matrixZIndex++)
+    {
+        vec3 oscillatingOffset = vec3(float(matrixXIndex + matrixExtension.x), float(matrixYIndex + matrixExtension.y), float(matrixZIndex + matrixExtension.z));
+        float oscillatingAnimation = 50.0 * sin(0.75 * length(oscillatingOffset) - 5.0 * iTime);
+        
+        vec3 elementPosition = vec3(0.0);
+        elementPosition.x = float(matrixXIndex) * matrixSeparation.x;
+        elementPosition.y = float(matrixYIndex) * matrixSeparation.y + oscillatingAnimation;
+        elementPosition.z = float(matrixZIndex) * matrixSeparation.z;
+        
+        setSceneCoverage(sampleSource, sphere(elementPosition, sphereRadius), sampleCoverage);
+    }
+}
+
+void applyGammaCorrection(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+    
+    vec3 lowerSelection = 12.92 * fragmentColor;
+    
+    vec3 upperSelection = 1.055 * pow(fragmentColor, vec3(0.4166667)) - 0.055;
+    
+    vec3 pickerSelection = step(0.0031308, fragmentColor);
+    
+    fragmentColor = mix(lowerSelection, upperSelection, pickerSelection);
+}
+
+void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
+{
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+    
+    const vec3 referencePosition = vec3(0.0);
+   
+    float orbitalLongitude = 45.0 + 45.0 * iTime;
+    float orbitalLatitude = 45.0;
+    float orbitalAltitude = 750.0;
+    vec3 orbitalCoordinates = vec3(radians(orbitalLongitude), radians(orbitalLatitude), orbitalAltitude);
+    vec3 orbitalDisplacement = vec3(0.0);
+    orbitalDisplacement.x = orbitalCoordinates.z * cos(orbitalCoordinates.y) * cos(orbitalCoordinates.x);
+    orbitalDisplacement.y = orbitalCoordinates.z * sin(orbitalCoordinates.y);
+    orbitalDisplacement.z = orbitalCoordinates.z * cos(orbitalCoordinates.y) * sin(orbitalCoordinates.x);
+    vec3 cameraPosition = referencePosition + orbitalDisplacement;
+   
+    const vec3 referenceUpward = vec3(0.0, 1.0, 0.0);
+    vec3 cameraForward = normalize(referencePosition - cameraPosition);
+    vec3 cameraRightward = normalize(cross(referenceUpward, cameraForward));
+    vec3 cameraUpward = normalize(cross(cameraForward, cameraRightward));
+    mat3 cameraOrientation = mat3(cameraRightward, cameraUpward, cameraForward);
+    vec2 projectionPosition = (2.0 * fragmentPosition - iResolution.xy) / min(iResolution.x, iResolution.y);
+    float projectionAngle = 60.0;
+    float projectionScale = 1.0 / tan(0.5 * radians(projectionAngle));
+    vec3 cameraDirection = normalize(cameraOrientation * vec3(projectionPosition, projectionScale));
+    
+    source cameraSource = source(cameraPosition, cameraDirection);
+    
+    float sceneCoverage = 0.0;
+    
+    setSceneCoverage(cameraSource, ivec3(4, 2, 4), vec3(100.0), 50.0, sceneCoverage);
+    
+    float backgroundIntensity = (1.0 - sceneCoverage);
+    vec3 backgroundColor = vec3(0.05) * clamp(backgroundIntensity, 0.0, 1.0);
+    
+    float foregroundIntensity = 1.0 - (1.0 - sceneCoverage) * (1.0 - sceneCoverage);
+    vec3 foregroundColor = vec3(0.0, 0.75, 1.0) * clamp(foregroundIntensity, 0.0, 1.0);
+    
+    fragmentColor.rgb = mix(backgroundColor, foregroundColor, sceneCoverage);
+    
+    applyGammaCorrection(fragmentColor.rgb);
+}
+
+==================================================
+==================================================
