@@ -11,7 +11,7 @@ procedural, checkerboard, antialiasing, utility
 
 DESCRIPTION:
 
-Screen-space procedural checkerboard rendered with analytic anti-aliasing using fwidth(). Includes configurable tile colors, optional grid lines, and proper sRGB output.
+Procedural checkerboard rendered with analytic anti-aliasing using fwidth(). Includes configurable tile colors, optional grid lines, and proper sRGB output.
 
 CODE:
 
@@ -83,7 +83,7 @@ procedural, curves, antialiasing, trigonometry, animation
 
 DESCRIPTION:
 
-Procedural animated curves rendered with analytic anti-aliasing using fwidth() and derivative-based distance estimation. Includes multiple trigonometric curves over a configurable checkerboard background.
+Procedural animated curves, using derivative-based distance for slope-independent line thickness. Includes multiple trigonometric curves, a checkerboard background, and proper sRGB output.
 
 CODE:
 
@@ -205,7 +205,7 @@ procedural, spheres, antialiasing, coverage
 
 DESCRIPTION:
 
-Procedural spheres rendered as antialiased screen-space coverage masks using fwidth(), based on ray-to-center distance rather than true ray-sphere intersection — so overlapping spheres have no real depth occlusion. Includes an animated orbital camera.
+Procedural spheres rendered as screen-space coverage masks, without raymarching, raytracing, or depth occlusion. Includes an animated 3D grid of spheres, a configurable orbital camera, and proper sRGB output.
 
 CODE:
 
