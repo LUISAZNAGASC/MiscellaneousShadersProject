@@ -205,7 +205,7 @@ procedural, spheres, antialiasing, coverage
 
 DESCRIPTION:
 
-Procedural spheres rendered with analytic anti-aliasing using fwidth() and ray-based distance evaluation. Includes smooth coverage accumulation and a configurable orbital camera.
+Procedural spheres rendered as antialiased screen-space coverage masks using fwidth(), based on ray-to-center distance rather than true ray-sphere intersection — so overlapping spheres have no real depth occlusion. Includes an animated orbital camera.
 
 CODE:
 
