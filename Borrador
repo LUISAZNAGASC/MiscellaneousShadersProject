@@ -197,7 +197,7 @@ void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
 
 TITLE:
 
-Analytic_Spheres_01
+Impostor_Spheres_01
 
 TAGS:
 
