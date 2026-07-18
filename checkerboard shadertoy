@@ -1,0 +1,81 @@
+void transformLocalCoordinates(inout vec2 sourceCoordinates, const in float translationAngle, const in float orientationAngle)
+{
+    vec2 translationBasis = vec2(cos(translationAngle), sin(translationAngle));
+    vec2 orientationBasis = vec2(cos(orientationAngle), sin(orientationAngle));
+   
+    float coordinateXXFactor = orientationBasis.x * (sourceCoordinates.x - translationBasis.x);
+    float coordinateXYFactor = orientationBasis.y * (sourceCoordinates.y - translationBasis.y);
+    float coordinateYXFactor = orientationBasis.y * (sourceCoordinates.x - translationBasis.x);
+    float coordinateYYFactor = orientationBasis.x * (sourceCoordinates.y - translationBasis.y);
+   
+    sourceCoordinates.x = coordinateXXFactor - coordinateXYFactor;
+    sourceCoordinates.y = coordinateYXFactor + coordinateYYFactor;
+}
+
+void applyCheckerboardBackground(inout vec3 fragmentColor, const in vec2 screenCoordinates, const in vec3 squareColor01, const in vec3 squareColor02, const in float squareDimension, const in vec3 segmentColor, const in float segmentDimension)
+{
+    if (squareDimension <= 0.0) return;
+   
+    vec2 squarePosition = screenCoordinates / squareDimension;
+   
+    vec2 squareFootprint = max(vec2(1e-7), fwidth(squarePosition));
+   
+    vec2 squareNCoordinate = abs(fract(0.5 * (squarePosition - 0.5 * squareFootprint)) - 0.5);
+    vec2 squarePCoordinate = abs(fract(0.5 * (squarePosition + 0.5 * squareFootprint)) - 0.5);
+   
+    float squareSelection = 2.0 * (squareNCoordinate.x - squarePCoordinate.x) * (squareNCoordinate.y - squarePCoordinate.y);
+    squareSelection = 0.5 - squareSelection / (squareFootprint.x * squareFootprint.y);
+   
+    fragmentColor = mix(squareColor01, squareColor02, squareSelection);
+   
+    if (segmentDimension <= 0.0) return;
+   
+    vec2 segmentPosition = mod(screenCoordinates, squareDimension);
+    segmentPosition = min(segmentPosition, squareDimension - segmentPosition);
+   
+    vec2 segmentFootprint = max(vec2(1e-7), fwidth(segmentPosition));
+   
+    vec2 segmentXThreshold = segmentDimension + vec2(-0.5, 0.5) * segmentFootprint.x;
+    vec2 segmentYThreshold = segmentDimension + vec2(-0.5, 0.5) * segmentFootprint.y;
+   
+    float segmentXSelection = smoothstep(segmentXThreshold.x, segmentXThreshold.y, segmentPosition.x);
+    float segmentYSelection = smoothstep(segmentYThreshold.x, segmentYThreshold.y, segmentPosition.y);
+    float segmentSelection = min(segmentXSelection, segmentYSelection);
+   
+    fragmentColor = mix(segmentColor, fragmentColor, segmentSelection);
+}
+
+void toneMappingImageProcessing(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+   
+    vec3 compressedNumerator = fragmentColor * (2.51 * fragmentColor + 0.03);
+    vec3 compressedDenominator = fragmentColor * (2.43 * fragmentColor + 0.59) + 0.14;
+   
+    fragmentColor = clamp(compressedNumerator / compressedDenominator, 0.0, 1.0);
+}
+
+void gammaCorrectionImageProcessing(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+   
+    vec3 downlightComponent = 12.92 * fragmentColor;
+    vec3 highlightComponent = 1.055 * pow(fragmentColor, vec3(0.4166667)) - 0.055;
+    vec3 componentSelection = step(0.0031308, fragmentColor);
+   
+    fragmentColor = mix(downlightComponent, highlightComponent, componentSelection);
+}
+
+void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
+{
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+   
+    vec2 screenCoordinates = (2.0 * fragmentPosition - iResolution.xy) / min(iResolution.x, iResolution.y);
+    
+    transformLocalCoordinates(screenCoordinates, radians(45.0) * iTime, radians(45.0) * iTime);
+   
+    applyCheckerboardBackground(fragmentColor.rgb, screenCoordinates, vec3(0.15), vec3(0.05), 0.5, vec3(0.01), 0.01);
+   
+    toneMappingImageProcessing(fragmentColor.rgb);
+    gammaCorrectionImageProcessing(fragmentColor.rgb);
+}
