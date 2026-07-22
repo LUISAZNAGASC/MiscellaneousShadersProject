@@ -1,0 +1,59 @@
+#version 300 es
+
+precision highp float;
+
+out vec4 g_l_FragColor;
+
+uniform vec2 u_resolution;
+
+float getCircleDistance(
+  const in vec2 samplePosition,
+  const in vec2 circlePosition,
+  const in float circleRadius)
+{
+  float circleDistance = distance(samplePosition, circlePosition) - circleRadius;
+
+  return circleDistance;
+}
+
+float getCircleCoverage(
+  const in float circleDistance)
+{
+  vec2 circleFootprint = vec2(-0.5, 0.5) * max(1e-7, fwidth(circleDistance));
+
+  float circleCoverage = 1.0 - smoothstep(circleFootprint.x, circleFootprint.y, circleDistance);
+
+  return circleCoverage;
+}
+
+float getCircleRadiance(
+  const in float circleDistance,
+  const in float radianceIntensity,
+  const in float radianceFalloff)
+{
+  float circleRadiance = exp(-radianceFalloff * abs(circleDistance));
+  circleRadiance = circleRadiance * radianceIntensity;
+
+  return circleRadiance;
+}
+
+void main()
+{
+  g_l_FragColor = vec4(0.000, 0.000, 0.000, 1.000);
+
+  vec2 screenCoordinates = (2.0 * gl_FragCoord.xy - u_resolution) / min(u_resolution.x, u_resolution.y);
+
+  float circleDistance01 = getCircleDistance(screenCoordinates, vec2(0.0), 0.5);
+  float circleDistance02 = getCircleDistance(screenCoordinates, vec2(0.0), 0.35);
+  
+  float annulusDistance = max(circleDistance01, -circleDistance02);
+  float annulusCoverage = getCircleCoverage(annulusDistance);
+  float annulusRadiance = getCircleRadiance(annulusDistance, 1.0, 5.0);
+  annulusRadiance = annulusRadiance * (1.0 - annulusCoverage);
+
+  vec3 coverageAlbedo = vec3(0.000, 1.000, 1.000);
+  vec3 radianceAlbedo = vec3(0.0, 1.0, 0.0);
+
+  g_l_FragColor.rgb = g_l_FragColor.rgb + coverageAlbedo * annulusCoverage;
+  g_l_FragColor.rgb = mix(g_l_FragColor.rgb, radianceAlbedo, annulusRadiance);
+}
