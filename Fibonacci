@@ -1,0 +1,189 @@
+const float InvalidIntersection = -1.0;
+const float GoldenAngle = 3.14159265 * (3.0 - sqrt(5.0));
+const int MAX_SCENE_SPHERES = 100;
+
+struct source { vec3 position; vec3 direction; };
+struct sphere { vec3 position; float radius; };
+struct intersection { vec3 position; vec3 normal; int sphereIndex; float distanceFromSource; };
+
+float getSphereIntersection(const in source sampleSource, const in sphere sampleSphere, const in float minimumIntersection, const in float maximumIntersection)
+{
+    vec3 relativePosition = sampleSource.position - sampleSphere.position;
+    float quadraticCoefficient = dot(sampleSource.direction, sampleSource.direction);
+    float linearCoefficient = 2.0 * dot(relativePosition, sampleSource.direction);
+    float constantCoefficient = dot(relativePosition, relativePosition) - sampleSphere.radius * sampleSphere.radius;
+    float quadraticDiscriminant = linearCoefficient * linearCoefficient - 4.0 * quadraticCoefficient * constantCoefficient;
+    if (quadraticDiscriminant < 0.0) return InvalidIntersection;
+    float discriminantRadical = sqrt(quadraticDiscriminant);
+    float negativeIntersection = (-linearCoefficient - discriminantRadical) / (2.0 * quadraticCoefficient);
+    float positiveIntersection = (-linearCoefficient + discriminantRadical) / (2.0 * quadraticCoefficient);
+    float incomingIntersection = min(negativeIntersection, positiveIntersection);
+    float outgoingIntersection = max(negativeIntersection, positiveIntersection);
+    if (incomingIntersection > minimumIntersection && incomingIntersection < maximumIntersection) return incomingIntersection;
+    if (outgoingIntersection > minimumIntersection && outgoingIntersection < maximumIntersection) return outgoingIntersection;
+    return InvalidIntersection;
+}
+
+bool trySphereIntersection(const in source sampleSource, const in sphere sampleSphere, const in float minimumIntersection, const in float maximumIntersection, out float sphereIntersection)
+{
+    sphereIntersection = getSphereIntersection(sampleSource, sampleSphere, minimumIntersection, maximumIntersection);
+    return sphereIntersection != InvalidIntersection;
+}
+
+vec3 getFibonacciSpherePoint(const in int pointIndex, const in int pointCount, const in float sphereRadius)
+{
+    float normalizedHeight = 1.0 - (2.0 * float(pointIndex) + 1.0) / float(pointCount);
+    float horizontalRadius = sqrt(max(0.0, 1.0 - normalizedHeight * normalizedHeight));
+    float azimuthalAngle = GoldenAngle * float(pointIndex);
+
+    vec3 unitDirection;
+    unitDirection.x = horizontalRadius * cos(azimuthalAngle);
+    unitDirection.y = normalizedHeight;
+    unitDirection.z = horizontalRadius * sin(azimuthalAngle);
+
+    return sphereRadius * unitDirection;
+}
+
+bool traceFibonacciScene(const in source sampleSource, const in vec3 sphereCenter, const in float distributionRadius, const in float pointSphereRadius, const in int pointCount, const in float minimumIntersection, const in float maximumIntersection, out intersection sceneIntersection)
+{
+    // Test barato: descarta rayos que ni tocan la región completa antes del loop fino.
+    float boundingRadius = distributionRadius + pointSphereRadius;
+    sphere boundingSphere = sphere(sphereCenter, boundingRadius);
+    float boundingIntersection;
+    if (!trySphereIntersection(sampleSource, boundingSphere, minimumIntersection, maximumIntersection, boundingIntersection))
+    {
+        return false;
+    }
+
+    int actualPointCount = min(pointCount, MAX_SCENE_SPHERES);
+
+    float closestIntersection = maximumIntersection;
+    int closestSphereIndex = -1;
+    vec3 closestSpherePosition = vec3(0.0);
+
+    for (int pointIndex = 0; pointIndex < MAX_SCENE_SPHERES; pointIndex++)
+    {
+        if (pointIndex >= actualPointCount) break;
+
+        vec3 pointPosition = sphereCenter + getFibonacciSpherePoint(pointIndex, actualPointCount, distributionRadius);
+        sphere candidateSphere = sphere(pointPosition, pointSphereRadius);
+
+        float candidateIntersection;
+        bool hitFound = trySphereIntersection(sampleSource, candidateSphere, minimumIntersection, closestIntersection, candidateIntersection);
+
+        if (hitFound)
+        {
+            closestIntersection = candidateIntersection;
+            closestSphereIndex = pointIndex;
+            closestSpherePosition = pointPosition;
+        }
+    }
+
+    if (closestSphereIndex == -1) return false;
+
+    sceneIntersection.distanceFromSource = closestIntersection;
+    sceneIntersection.position = sampleSource.position + closestIntersection * sampleSource.direction;
+    sceneIntersection.normal = normalize(sceneIntersection.position - closestSpherePosition);
+    sceneIntersection.sphereIndex = closestSphereIndex;
+
+    return true;
+}
+
+vec3 hsvToRgb(const in vec3 hsvColor)
+{
+    vec4 hueOffsets = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 hueSample = abs(fract(hsvColor.xxx + hueOffsets.xyz) * 6.0 - hueOffsets.www);
+    return hsvColor.z * mix(hueOffsets.xxx, clamp(hueSample - hueOffsets.xxx, 0.0, 1.0), hsvColor.y);
+}
+
+vec3 getSphereColor(const in int sphereIndex, const in int pointCount)
+{
+    float hueValue = float(sphereIndex) / float(pointCount);
+    return hsvToRgb(vec3(hueValue, 0.75, 1.0));
+}
+
+void toneMappingImageProcessing(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+
+    vec3 compressedNumerator = fragmentColor * (2.51 * fragmentColor + 0.03);
+    vec3 compressedDenominator = fragmentColor * (2.43 * fragmentColor + 0.59) + 0.14;
+
+    fragmentColor = clamp(compressedNumerator / compressedDenominator, 0.0, 1.0);
+}
+
+void gammaCorrectionImageProcessing(inout vec3 fragmentColor)
+{
+    fragmentColor = max(vec3(0.0), fragmentColor);
+
+    vec3 downlightComponent = 12.92 * fragmentColor;
+    vec3 highlightComponent = 1.055 * pow(fragmentColor, vec3(0.4166667)) - 0.055;
+    vec3 componentSelection = step(0.0031308, fragmentColor);
+
+    fragmentColor = mix(downlightComponent, highlightComponent, componentSelection);
+}
+
+vec3 getSphereShading(const in vec3 normalVector, const in vec3 viewDirection, const in vec3 lightDirection, const in vec3 baseColor)
+{
+    float lightAmount = max(dot(normalVector, lightDirection), 0.0);
+
+    // Más bandas = más sensación de curvatura, pero siguen siendo tonos planos.
+    float toonStep;
+    if (lightAmount > 0.85) toonStep = 1.15;
+    else if (lightAmount > 0.55) toonStep = 0.9;
+    else if (lightAmount > 0.25) toonStep = 0.65;
+    else toonStep = 0.4;
+
+    vec3 shadedColor = baseColor * toonStep;
+
+    // Highlight puntual desplazado: esto es lo que realmente lee como "esfera brillante" en flat design.
+    float highlightAmount = max(dot(normalVector, lightDirection), 0.0);
+    float highlightMask = smoothstep(0.92, 0.97, highlightAmount);
+    shadedColor = mix(shadedColor, vec3(1.0), highlightMask * 0.9);
+
+    // Contorno sutil en el borde de la silueta.
+    float edgeAmount = 1.0 - abs(dot(normalVector, viewDirection));
+    float outlineMask = smoothstep(0.8, 0.9, edgeAmount);
+    shadedColor = mix(shadedColor, baseColor * 0.25, outlineMask);
+
+    return shadedColor;
+}
+
+void mainImage(out vec4 fragmentColor, in vec2 fragmentPosition)
+{
+    fragmentColor = vec4(0.05, 0.05, 0.05, 1.0);
+
+    const vec3 referencePosition = vec3(0.0, 0.0, 0.0);
+
+    float orbitalLongitude = 45.0 + 45.0 * iTime;
+    float orbitalLatitude = 45.0;
+    float orbitalAltitude = 500.0;
+    vec3 orbitalCoordinates = vec3(radians(orbitalLongitude), radians(orbitalLatitude), orbitalAltitude);
+    vec3 orbitalDisplacement = vec3(0.0, 0.0, 0.0);
+    orbitalDisplacement.x = orbitalCoordinates.z * cos(orbitalCoordinates.y) * cos(orbitalCoordinates.x);
+    orbitalDisplacement.y = orbitalCoordinates.z * sin(orbitalCoordinates.y);
+    orbitalDisplacement.z = orbitalCoordinates.z * cos(orbitalCoordinates.y) * sin(orbitalCoordinates.x);
+    vec3 cameraPosition = referencePosition + orbitalDisplacement;
+
+    const vec3 referenceUpward = vec3(0.0, 1.0, 0.0);
+    vec3 cameraForward = normalize(referencePosition - cameraPosition);
+    vec3 cameraRightward = normalize(cross(referenceUpward, cameraForward));
+    vec3 cameraUpward = normalize(cross(cameraForward, cameraRightward));
+    mat3 cameraOrientation = mat3(cameraRightward, cameraUpward, cameraForward);
+    vec2 projectionPosition = (2.0 * fragmentPosition - iResolution.xy) / min(iResolution.x, iResolution.y);
+    float projectionAngle = 60.0;
+    float projectionScale = 1.0 / tan(0.5 * radians(projectionAngle));
+    vec3 cameraDirection = normalize(cameraOrientation * vec3(projectionPosition, projectionScale));
+
+    source cameraSource = source(cameraPosition, cameraDirection);
+
+    
+    intersection sceneIntersection;
+if (traceFibonacciScene(cameraSource, referencePosition, 200.0, 32.0, 100, 0.0, 10000.0, sceneIntersection))
+{
+    vec3 baseColor = getSphereColor(sceneIntersection.sphereIndex, 64);
+    fragmentColor = vec4(getSphereShading(sceneIntersection.normal, -cameraDirection, vec3(0.0), baseColor), 1.0);
+}
+
+    gammaCorrectionImageProcessing(fragmentColor.rgb);
+}
